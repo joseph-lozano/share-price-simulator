@@ -1,13 +1,7 @@
+import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
-import {
-  Slider,
-  SliderFillTrack,
-  SliderOutput,
-  SliderThumb,
-  SliderTrack,
-} from "./components/ui/slider";
+import { Button, Group, Input, NumberField } from "react-aria-components";
 import { Label } from "./components/ui/label";
-import { cn } from "./lib/utils";
 import {
   Table,
   TableBody,
@@ -17,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "./components/ui/table";
-import { useDebounce } from "@uidotdev/usehooks";
 
 const currentPlanYear = 2023;
 const years = new Array(30).fill(0).map((_, i) => i + 1);
@@ -233,33 +226,68 @@ function SliderInput({
   onChange,
 }: SliderProps) {
   return (
-    <Slider
-      aria-label="slider demo"
-      value={value}
-      onChange={(value) => {
-        if (Array.isArray(value)) {
-          onChange(value[0]);
-        } else {
-          onChange(value);
-        }
-      }}
-      minValue={minValue}
+    <NumberField
       maxValue={maxValue}
+      minValue={minValue}
       step={step}
-      className={cn("w-96")}
+      value={value}
+      onChange={onChange}
+      className="grid w-full max-w-sm items-center gap-1.5"
     >
-      <div className="flex w-full flex-col">
-        <div className="flex justify-between">
-          <Label>{label}</Label>
-          <SliderOutput className="text-sm" />
-        </div>
-        <SliderTrack>
-          <SliderFillTrack />
-          <SliderThumb />
-        </SliderTrack>
-      </div>
-    </Slider>
+      <Label>{label}</Label>
+      <Group className="group">
+        <Button
+          className={
+            "border group-focus-within:border-blue-700 group-focus-within:border-2 group-focus-within:border-r-0 border-r-0 rounded-l-md px-2 py-1"
+          }
+          slot="decrement"
+        >
+          -
+        </Button>
+        <Input
+          className={
+            "border outline-none group-focus-within:border-blue-700 group-focus-within:border-y-2 border-x-0 rounded-none px-2 py-1"
+          }
+        />
+        <Button
+          className={
+            "border group-focus-within:border-blue-700 group-focus-within:border-2 group-focus-within:border-l-0 border-l-0 rounded-r-md px-2 py-1"
+          }
+          slot="increment"
+        >
+          +
+        </Button>
+      </Group>
+    </NumberField>
   );
+  // return (
+  //   <Slider
+  //     aria-label="slider demo"
+  //     value={value}
+  //     onChange={(value) => {
+  //       if (Array.isArray(value)) {
+  //         onChange(value[0]);
+  //       } else {
+  //         onChange(value);
+  //       }
+  //     }}
+  //     minValue={minValue}
+  //     maxValue={maxValue}
+  //     step={step}
+  //     className={cn("w-96")}
+  //   >
+  //     <div className="flex w-full flex-col">
+  //       <div className="flex justify-between">
+  //         <Label>{label}</Label>
+  //         <SliderOutput className="text-sm" />
+  //       </div>
+  //       <SliderTrack>
+  //         <SliderFillTrack />
+  //         <SliderThumb />
+  //       </SliderTrack>
+  //     </div>
+  //   </Slider>
+  // );
 }
 
 function monteCarloSimulation(

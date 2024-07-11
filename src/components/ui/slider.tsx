@@ -86,8 +86,8 @@ const _SliderThumb = ({ className }: SliderThumbProps) => (
 
 export {
   _Slider as Slider,
-  _SliderTrack as SliderTrack,
   _SliderFillTrack as SliderFillTrack,
-  _SliderThumb as SliderThumb,
   _SliderOutput as SliderOutput,
+  _SliderThumb as SliderThumb,
+  _SliderTrack as SliderTrack,
 };
