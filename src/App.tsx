@@ -115,7 +115,7 @@ function App() {
         />
         <NumberInput
           label="Annual shares"
-          description="How many shares you will gain each year"
+          description="How many shares you will gain each year."
           maxValue={1000}
           minValue={0}
           step={1}
@@ -124,7 +124,7 @@ function App() {
         />
         <NumberInput
           label="Annual Growth Rate"
-          description="How much the price will grow each year"
+          description="How much the price will grow each year."
           maxValue={0.3}
           minValue={0}
           step={0.01}
@@ -153,7 +153,8 @@ function App() {
           format="percent"
         />
         <NumberInput
-          label="Annual Volility"
+          label="Volatility"
+          description="How much variability there is in the price."
           maxValue={0.5}
           minValue={0}
           step={0.01}
