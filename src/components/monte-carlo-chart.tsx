@@ -49,9 +49,9 @@ export function MonteCarloChart({ rawData }: { rawData: number[][] }) {
       >
         <CartesianGrid vertical={false} />
         <YAxis
-          tickFormatter={(n) => nFormatter(n, 3)}
+          tickFormatter={(n) => `$${nFormatter(n, 3)}`}
           tickMargin={8}
-          // ticks={[100_000, 500_000, 2_500_000, 5_000_000, 10_000_000]}
+          tickCount={8}
           scale={"linear"}
         />
         <XAxis
@@ -68,7 +68,7 @@ export function MonteCarloChart({ rawData }: { rawData: number[][] }) {
               labelKey="year"
               labelFormatter={(value) => value}
               formatter={(value, name) =>
-                `${chartConfig[name as keyof typeof chartConfig].label}: ${nFormatter(Number(value), 1)}`
+                `${chartConfig[name as keyof typeof chartConfig].label}: $${nFormatter(Number(value), 1)}`
               }
             />
           }
@@ -104,10 +104,9 @@ function nFormatter(num: number, digits = 3) {
     { value: 1, symbol: "" },
     { value: 1e3, symbol: "k" },
     { value: 1e6, symbol: "M" },
-    { value: 1e9, symbol: "G" },
+    { value: 1e9, symbol: "B" },
     { value: 1e12, symbol: "T" },
-    { value: 1e15, symbol: "P" },
-    { value: 1e18, symbol: "E" },
+    { value: 1e15, symbol: "Q" },
   ];
   const regexp = /\.0+$|(?<=\.[0-9]*[1-9])0+$/;
   const item = lookup.findLast((item) => num >= item.value);

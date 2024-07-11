@@ -296,9 +296,9 @@ function monteCarloSimulation(
     for (let year = 0; year < years; year++) {
       totalShares += annualShares;
       // Simulate the stock price at the end of the year using geometric Brownian motion
-      const growth = (annualGrowthRate - annualVolatility ** 2 / 2) * 1;
-      const randomShock = annualVolatility * Math.sqrt(1) * getRandomNormal();
-      price = price * Math.exp(growth + randomShock);
+      const growth =
+        annualGrowthRate + annualVolatility * randomNormalDistribution();
+      price *= 1 + growth;
 
       portfolioValue = totalShares * price;
     }
@@ -310,7 +310,7 @@ function monteCarloSimulation(
 }
 
 // Helper function to generate random numbers with a normal distribution (mean 0, variance 1)
-function getRandomNormal() {
+function randomNormalDistribution() {
   let u = 0,
     v = 0;
   while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
