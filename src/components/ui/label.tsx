@@ -1,5 +1,3 @@
-"use client";
-
 import { cva } from "class-variance-authority";
 import { Label, LabelProps } from "react-aria-components";
 

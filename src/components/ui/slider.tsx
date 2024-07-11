@@ -1,6 +1,3 @@
-"use client";
-
-import * as React from "react";
 import {
   Slider,
   SliderOutput,
@@ -13,6 +10,7 @@ import {
 } from "react-aria-components";
 
 import { cn } from "@/lib/utils";
+import { useContext } from "react";
 
 const _SliderOutput = SliderOutput;
 
@@ -57,7 +55,7 @@ const _SliderFillTrack = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
-  let state = React.useContext(SliderStateContext)!;
+  const state = useContext(SliderStateContext)!;
   const orientation = state.orientation === "vertical" ? "height" : "width";
   return (
     <div
