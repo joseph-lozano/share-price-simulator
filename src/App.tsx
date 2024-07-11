@@ -144,7 +144,7 @@ function App() {
         />
         <NumberInput
           label="Growth Rate Floor"
-          description="Even after factoring in decay, growth rate will be less than this value."
+          description="Even after factoring in decay, growth rate will never be less than this value."
           maxValue={annualGrowthRate}
           minValue={0}
           step={0.01}
