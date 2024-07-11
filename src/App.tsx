@@ -25,7 +25,7 @@ const years = new Array(30).fill(0).map((_, i) => i + 1);
 function App() {
   const searchParams = new URLSearchParams(window.location.search);
   const [initialPrice, setInitialPrice] = useState(
-    Number(searchParams.get("initialPrice")) || 100,
+    Number(searchParams.get("2023Price")) || 100,
   );
   const [initialShares, setInitialShares] = useState(
     Number(searchParams.get("initialShares")) || 0,
@@ -79,7 +79,7 @@ function App() {
     }, [] as number[][]);
 
     const searchParams = new URLSearchParams();
-    searchParams.set("initialPrice", debouncedInitialPrice.toString());
+    searchParams.set("2023Price", debouncedInitialPrice.toString());
     searchParams.set("initialShares", debouncedInitialShares.toString());
     searchParams.set("annualShares", debouncedAnnualShares.toString());
     searchParams.set("annualGrowthRate", debouncedGrowthRate.toString());
