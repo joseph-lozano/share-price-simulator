@@ -1,6 +1,7 @@
 import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
 import { Button, Group, Input, NumberField } from "react-aria-components";
+import { MonteCarloChart } from "./components/monte-carlo-chart";
 import { Label } from "./components/ui/label";
 import {
   Table,
@@ -62,13 +63,11 @@ function App() {
         1000,
         debouncedInitialShares,
       ).toSorted((a, b) => a - b);
-      const percentile20 = results[Math.floor(results.length * 0.25)];
+      const percentile10 = results[Math.floor(results.length * 0.1)];
       const percentile50 = results[Math.floor(results.length * 0.5)];
-      const percentile80 = results[Math.floor(results.length * 0.75)];
+      const percentile90 = results[Math.floor(results.length * 0.9)];
 
-      console.log(results);
-
-      return [...acc, [year, percentile20, percentile50, percentile80]];
+      return [...acc, [year, percentile10, percentile50, percentile90]];
     }, [] as number[][]);
 
     const searchParams = new URLSearchParams();
@@ -99,7 +98,7 @@ function App() {
   return (
     <div className="flex flex-col items-center justify-center gap-8 py-20">
       <div className="max-w-xl flex flex-col gap-8">
-        <SliderInput
+        <NumberInput
           label="Price"
           maxValue={1000}
           minValue={0}
@@ -107,7 +106,7 @@ function App() {
           value={initialPrice}
           onChange={setInitialPrice}
         />
-        <SliderInput
+        <NumberInput
           label="2023 Shares"
           maxValue={1000}
           minValue={0}
@@ -115,7 +114,7 @@ function App() {
           value={initialShares}
           onChange={setInitialShares}
         />
-        <SliderInput
+        <NumberInput
           label="Annual Shares"
           maxValue={150}
           minValue={20}
@@ -123,7 +122,7 @@ function App() {
           value={annualShares}
           onChange={setAnnualShares}
         />
-        <SliderInput
+        <NumberInput
           label="Annual Growth Rate"
           maxValue={30}
           minValue={-5}
@@ -131,7 +130,7 @@ function App() {
           value={annualGrowthRate}
           onChange={setAnnualGrowthRate}
         />
-        <SliderInput
+        <NumberInput
           label="Annual Volility"
           maxValue={50}
           minValue={0}
@@ -139,6 +138,22 @@ function App() {
           value={annualVolatility}
           onChange={setAnnualVolatility}
         />
+      </div>
+
+      <div className="py-12">
+        {simulation.length > 0 && (
+          <MonteCarloChart
+            rawData={[
+              [
+                0,
+                debouncedInitialPrice * debouncedInitialShares,
+                debouncedInitialShares * debouncedInitialPrice,
+                debouncedInitialShares * debouncedInitialPrice,
+              ],
+              ...simulation,
+            ]}
+          />
+        )}
       </div>
 
       <div className="my-12">
@@ -149,9 +164,9 @@ function App() {
               <TableHead>Plan Year</TableHead>
               <TableHead>Total Shares</TableHead>
               <TableHead className="text-right">Median Price</TableHead>
-              <TableHead className="text-right">20th Percentile</TableHead>
+              <TableHead className="text-right">10th Percentile</TableHead>
               <TableHead className="text-right">50th Percentile</TableHead>
-              <TableHead className="text-right">80th Percentile</TableHead>
+              <TableHead className="text-right">90th Percentile</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -174,7 +189,7 @@ function App() {
               </TableCell>
             </TableRow>
             {simulation.map(
-              ([year, percentile20, percentile50, percentile80]) => (
+              ([year, percentile10, percentile50, percentile90]) => (
                 <TableRow key={year}>
                   <TableCell className="font-bold">
                     {year + currentPlanYear}
@@ -190,14 +205,14 @@ function App() {
                   </TableCell>
 
                   <TableCell className="text-right font-mono">
-                    {formatMoney(percentile20)}
+                    {formatMoney(percentile10)}
                   </TableCell>
                   <TableCell className="text-right font-mono">
                     {formatMoney(percentile50)}
                   </TableCell>
 
                   <TableCell className="text-right font-mono">
-                    {formatMoney(percentile80)}
+                    {formatMoney(percentile90)}
                   </TableCell>
                 </TableRow>
               ),
@@ -217,7 +232,7 @@ type SliderProps = {
   value: number;
   onChange: (value: number) => void;
 };
-function SliderInput({
+function NumberInput({
   maxValue,
   minValue,
   value,
@@ -260,34 +275,6 @@ function SliderInput({
       </Group>
     </NumberField>
   );
-  // return (
-  //   <Slider
-  //     aria-label="slider demo"
-  //     value={value}
-  //     onChange={(value) => {
-  //       if (Array.isArray(value)) {
-  //         onChange(value[0]);
-  //       } else {
-  //         onChange(value);
-  //       }
-  //     }}
-  //     minValue={minValue}
-  //     maxValue={maxValue}
-  //     step={step}
-  //     className={cn("w-96")}
-  //   >
-  //     <div className="flex w-full flex-col">
-  //       <div className="flex justify-between">
-  //         <Label>{label}</Label>
-  //         <SliderOutput className="text-sm" />
-  //       </div>
-  //       <SliderTrack>
-  //         <SliderFillTrack />
-  //         <SliderThumb />
-  //       </SliderTrack>
-  //     </div>
-  //   </Slider>
-  // );
 }
 
 function monteCarloSimulation(
@@ -331,7 +318,7 @@ function getRandomNormal() {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-function formatMoney(number: number) {
+export function formatMoney(number: number) {
   return number.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
