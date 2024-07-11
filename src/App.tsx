@@ -24,7 +24,9 @@ const years = new Array(30).fill(0).map((_, i) => i + 1);
 
 function App() {
   const searchParams = new URLSearchParams(window.location.search);
-  const [price, setPrice] = useState(Number(searchParams.get("price")) || 100);
+  const [initialPrice, setInitialPrice] = useState(
+    Number(searchParams.get("initialPrice")) || 100,
+  );
   const [initialShares, setInitialShares] = useState(
     Number(searchParams.get("initialShares")) || 0,
   );
@@ -40,20 +42,26 @@ function App() {
   const [simulation, setSimulation] = useState<number[][]>([]);
 
   const [
-    debouncedPrice,
+    debouncedInitialPrice,
     debouncedInitialShares,
     debouncedAnnualShares,
     debouncedGrowthRate,
     debouncedVolitiliy,
   ] = useDebounce(
-    [price, initialShares, annualShares, annualGrowthRate, annualVolatility],
+    [
+      initialPrice,
+      initialShares,
+      annualShares,
+      annualGrowthRate,
+      annualVolatility,
+    ],
     500,
   );
 
   useEffect(() => {
     const simulationResults = years.reduce((acc, year) => {
       const results = monteCarloSimulation(
-        debouncedPrice,
+        debouncedInitialPrice,
         debouncedAnnualShares,
         year,
         debouncedGrowthRate / 100,
@@ -71,7 +79,7 @@ function App() {
     }, [] as number[][]);
 
     const searchParams = new URLSearchParams();
-    searchParams.set("price", debouncedPrice.toString());
+    searchParams.set("initialPrice", debouncedInitialPrice.toString());
     searchParams.set("initialShares", debouncedInitialShares.toString());
     searchParams.set("annualShares", debouncedAnnualShares.toString());
     searchParams.set("annualGrowthRate", debouncedGrowthRate.toString());
@@ -88,7 +96,7 @@ function App() {
 
     setSimulation(simulationResults);
   }, [
-    debouncedPrice,
+    debouncedInitialPrice,
     debouncedInitialShares,
     debouncedAnnualShares,
     debouncedGrowthRate,
@@ -103,8 +111,8 @@ function App() {
           maxValue={1000}
           minValue={0}
           step={1}
-          value={price}
-          onChange={setPrice}
+          value={initialPrice}
+          onChange={setInitialPrice}
         />
         <SliderInput
           label="2023 Shares"
@@ -160,16 +168,16 @@ function App() {
                 {debouncedInitialShares}
               </TableCell>
               <TableCell className="text-right font-bold font-mono">
-                {formatMoney(debouncedPrice)}
+                {formatMoney(debouncedInitialPrice)}
               </TableCell>
               <TableCell className="text-right font-mono">
-                {formatMoney(debouncedInitialShares * debouncedPrice)}
+                {formatMoney(debouncedInitialShares * debouncedInitialPrice)}
               </TableCell>
               <TableCell className="text-right font-mono">
-                {formatMoney(debouncedInitialShares * debouncedPrice)}
+                {formatMoney(debouncedInitialShares * debouncedInitialPrice)}
               </TableCell>
               <TableCell className="text-right font-mono">
-                {formatMoney(debouncedInitialShares * debouncedPrice)}
+                {formatMoney(debouncedInitialShares * debouncedInitialPrice)}
               </TableCell>
             </TableRow>
             {simulation.map(
