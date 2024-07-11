@@ -18,19 +18,28 @@ const years = new Array(30).fill(0).map((_, i) => i + 1);
 function App() {
   const serachParams = new URLSearchParams(window.location.search);
   const [initialPrice, setInitialPrice] = useState(
-    parseNumber(serachParams.get("2023Price")) || 100,
+    parseNumber(serachParams.get("2023Price")) ?? 100,
   );
   const [initialShares, setInitialShares] = useState(
-    parseNumber(serachParams.get("initialShares")) || 0,
+    parseNumber(serachParams.get("initialShares")) ?? 0,
   );
   const [annualShares, setAnnualShares] = useState(
-    parseNumber(serachParams.get("annualShares")) || 50,
+    parseNumber(serachParams.get("annualShares")) ?? 50,
   );
   const [annualGrowthRate, setAnnualGrowthRate] = useState(
-    parseNumber(serachParams.get("annualGrowthRate")) || 0.1,
+    parseNumber(serachParams.get("annualGrowthRate")) ?? 0.1,
   );
+
+  const [growthRateDecay, setGrowthRateDecay] = useState(
+    parseNumber(serachParams.get("growthRateDecay")) ?? 0.0,
+  );
+
+  const [growthRateFloor, setGrowthRateFloor] = useState(
+    parseNumber(serachParams.get("growthRateFloor")) ?? 0.04,
+  );
+
   const [annualVolatility, setAnnualVolatility] = useState(
-    parseNumber(serachParams.get("annualVolatility")) || 0.1,
+    parseNumber(serachParams.get("annualVolatility")) ?? 0.1,
   );
   const [simulation, setSimulation] = useState<number[][]>([]);
 
@@ -42,8 +51,10 @@ function App() {
         year,
         annualGrowthRate,
         annualVolatility,
-        10_000,
+        1_000,
         initialShares,
+        growthRateDecay,
+        growthRateFloor,
       ).toSorted((a, b) => a - b);
       const percentile10 = results[Math.floor(results.length * 0.1)];
       const percentile50 = results[Math.floor(results.length * 0.5)];
@@ -58,6 +69,9 @@ function App() {
     searchParams.set("initialShares", initialShares.toString());
     searchParams.set("annualShares", annualShares.toString());
     searchParams.set("annualGrowthRate", annualGrowthRate.toString());
+    searchParams.set("growthRateFloor", growthRateFloor.toString());
+    searchParams.set("growthRateDecay", growthRateDecay.toString());
+
     searchParams.set("annualVolatility", annualVolatility.toString());
 
     const newurl =
@@ -74,13 +88,15 @@ function App() {
     annualGrowthRate,
     annualVolatility,
     initialShares,
+    growthRateDecay,
+    growthRateFloor,
   ]);
 
   return (
     <div className="flex flex-col items-center justify-center gap-8 py-20">
       <div className="max-w-xl flex flex-col gap-8">
         <NumberInput
-          label="Price"
+          label="Price in 2023"
           maxValue={1000}
           minValue={0}
           step={0.01}
@@ -89,7 +105,8 @@ function App() {
           format="currency"
         />
         <NumberInput
-          label="2023 Shares"
+          label="2023 shares"
+          description="How many shares you own in plan year 2023"
           maxValue={1000}
           minValue={0}
           step={1}
@@ -97,7 +114,8 @@ function App() {
           onChange={setInitialShares}
         />
         <NumberInput
-          label="Annual Shares"
+          label="Annual shares"
+          description="How many shares you will gain each year"
           maxValue={1000}
           minValue={0}
           step={1}
@@ -106,11 +124,32 @@ function App() {
         />
         <NumberInput
           label="Annual Growth Rate"
-          maxValue={0.25}
-          minValue={-0.25}
+          description="How much the price will grow each year"
+          maxValue={0.3}
+          minValue={0}
           step={0.01}
           value={annualGrowthRate}
           onChange={setAnnualGrowthRate}
+          format="percent"
+        />
+        <NumberInput
+          label="Growth Rate Decay"
+          description="How much the growth rate will decay each year."
+          maxValue={0.5}
+          minValue={0}
+          step={0.01}
+          value={growthRateDecay}
+          onChange={setGrowthRateDecay}
+          format="percent"
+        />
+        <NumberInput
+          label="Growth Rate Floor"
+          description="Even after factoring in decay, growth rate will be less than this value."
+          maxValue={annualGrowthRate}
+          minValue={0}
+          step={0.01}
+          value={growthRateFloor}
+          onChange={setGrowthRateFloor}
           format="percent"
         />
         <NumberInput
@@ -213,6 +252,8 @@ type SliderProps = {
   value: number;
   onChange: (value: number) => void;
   format?: "percent" | "decimal" | "currency";
+  description?: string;
+  isDisabled?: boolean;
 };
 function NumberInput({
   maxValue,
@@ -222,9 +263,12 @@ function NumberInput({
   label,
   onChange,
   format = "decimal",
+  description,
+  isDisabled = false,
 }: SliderProps) {
   return (
     <NumberField
+      isDisabled={isDisabled}
       maxValue={maxValue}
       minValue={minValue}
       step={step}
@@ -234,10 +278,11 @@ function NumberInput({
       formatOptions={
         format === "currency"
           ? { style: "currency", currency: "USD" }
-          : { style: format }
+          : { style: format, minimumFractionDigits: countDecimals(step) }
       }
     >
       <Label>{label}</Label>
+      {description && <p className="text-xs opacity-75">{description}</p>}
       <Group className="group">
         <Button
           className={
@@ -272,7 +317,9 @@ function monteCarloSimulation(
   annualGrowthRate: number,
   annualVolatility: number,
   numSimulations: number,
-  initialShares: number = 0,
+  initialShares: number,
+  growthRateDecay: number,
+  growthRateFloor: number,
 ) {
   const results = [];
 
@@ -280,15 +327,21 @@ function monteCarloSimulation(
     let price = initialPrice;
     let totalShares = initialShares;
     let portfolioValue = initialShares * price;
+    let currentGrowthRate = annualGrowthRate;
 
     for (let year = 0; year < years; year++) {
       totalShares += annualShares;
       // Simulate the stock price at the end of the year using geometric Brownian motion
       const growth =
-        annualGrowthRate + annualVolatility * randomNormalDistribution();
+        currentGrowthRate + annualVolatility * randomNormalDistribution();
+
       price *= 1 + growth;
 
       portfolioValue = totalShares * price;
+      currentGrowthRate = Math.max(
+        currentGrowthRate * (1 - growthRateDecay),
+        growthRateFloor,
+      );
     }
 
     results.push(portfolioValue);
@@ -319,4 +372,12 @@ function parseNumber(value: string | null) {
   return value ? Number(value) : undefined;
 }
 
+function countDecimals(value: number): number {
+  if (Math.floor(value) === value) return 0;
+  const valueString = value.toString();
+  const decimalIndex = valueString.indexOf(".");
+  const ret = decimalIndex === -1 ? 0 : valueString.length - decimalIndex - 1;
+  console.log("countDecimals", value, ret);
+  return ret - 2;
+}
 export default App;
