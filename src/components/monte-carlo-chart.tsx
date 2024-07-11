@@ -64,12 +64,22 @@ export function MonteCarloChart({ rawData }: { rawData: number[][] }) {
           cursor={true}
           content={
             <ChartTooltipContent
-              hideLabel={true}
-              labelKey="year"
-              labelFormatter={(value) => value}
-              formatter={(value, name) =>
-                `${chartConfig[name as keyof typeof chartConfig].label}: $${nFormatter(Number(value), 1)}`
-              }
+              labelFormatter={(
+                _,
+                [
+                  {
+                    payload: { year },
+                  },
+                ],
+              ) => year}
+              formatter={(value, name) => (
+                <>
+                  <span className="font-bold after:content-[':']">
+                    {chartConfig[name as keyof typeof chartConfig].label}
+                  </span>
+                  ${nFormatter(Number(value), 1)}
+                </>
+              )}
             />
           }
         />
