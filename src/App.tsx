@@ -1,4 +1,3 @@
-import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
 import { Button, Group, Input, NumberField } from "react-aria-components";
 import { MonteCarloChart } from "./components/monte-carlo-chart";
@@ -17,51 +16,34 @@ const currentPlanYear = 2023;
 const years = new Array(30).fill(0).map((_, i) => i + 1);
 
 function App() {
-  const searchParams = new URLSearchParams(window.location.search);
+  const serachParams = new URLSearchParams(window.location.search);
   const [initialPrice, setInitialPrice] = useState(
-    Number(searchParams.get("2023Price")) || 100,
+    parseNumber(serachParams.get("2023Price")) || 100,
   );
   const [initialShares, setInitialShares] = useState(
-    Number(searchParams.get("initialShares")) || 0,
+    parseNumber(serachParams.get("initialShares")) || 0,
   );
   const [annualShares, setAnnualShares] = useState(
-    Number(searchParams.get("annualShares")) || 50,
+    parseNumber(serachParams.get("annualShares")) || 50,
   );
   const [annualGrowthRate, setAnnualGrowthRate] = useState(
-    Number(searchParams.get("annualGrowthRate")) || 10,
+    parseNumber(serachParams.get("annualGrowthRate")) || 0.1,
   );
   const [annualVolatility, setAnnualVolatility] = useState(
-    Number(searchParams.get("annualVolatility")) || 10,
+    parseNumber(serachParams.get("annualVolatility")) || 0.1,
   );
   const [simulation, setSimulation] = useState<number[][]>([]);
-
-  const [
-    debouncedInitialPrice,
-    debouncedInitialShares,
-    debouncedAnnualShares,
-    debouncedGrowthRate,
-    debouncedVolitiliy,
-  ] = useDebounce(
-    [
-      initialPrice,
-      initialShares,
-      annualShares,
-      annualGrowthRate,
-      annualVolatility,
-    ],
-    500,
-  );
 
   useEffect(() => {
     const simulationResults = years.reduce((acc, year) => {
       const results = monteCarloSimulation(
-        debouncedInitialPrice,
-        debouncedAnnualShares,
+        initialPrice,
+        annualShares,
         year,
-        debouncedGrowthRate / 100,
-        debouncedVolitiliy / 100,
-        1000,
-        debouncedInitialShares,
+        annualGrowthRate,
+        annualVolatility,
+        10_000,
+        initialShares,
       ).toSorted((a, b) => a - b);
       const percentile10 = results[Math.floor(results.length * 0.1)];
       const percentile50 = results[Math.floor(results.length * 0.5)];
@@ -70,12 +52,13 @@ function App() {
       return [...acc, [year, percentile10, percentile50, percentile90]];
     }, [] as number[][]);
 
+    setSimulation(simulationResults);
     const searchParams = new URLSearchParams();
-    searchParams.set("2023Price", debouncedInitialPrice.toString());
-    searchParams.set("initialShares", debouncedInitialShares.toString());
-    searchParams.set("annualShares", debouncedAnnualShares.toString());
-    searchParams.set("annualGrowthRate", debouncedGrowthRate.toString());
-    searchParams.set("annualVolatility", debouncedVolitiliy.toString());
+    searchParams.set("2023Price", initialPrice.toString());
+    searchParams.set("initialShares", initialShares.toString());
+    searchParams.set("annualShares", annualShares.toString());
+    searchParams.set("annualGrowthRate", annualGrowthRate.toString());
+    searchParams.set("annualVolatility", annualVolatility.toString());
 
     const newurl =
       window.location.protocol +
@@ -84,15 +67,13 @@ function App() {
       window.location.pathname +
       "?" +
       searchParams.toString();
-    window.history.pushState({ path: newurl }, "", newurl);
-
-    setSimulation(simulationResults);
+    history.pushState({ path: newurl }, "", newurl);
   }, [
-    debouncedInitialPrice,
-    debouncedInitialShares,
-    debouncedAnnualShares,
-    debouncedGrowthRate,
-    debouncedVolitiliy,
+    initialPrice,
+    annualShares,
+    annualGrowthRate,
+    annualVolatility,
+    initialShares,
   ]);
 
   return (
@@ -102,9 +83,10 @@ function App() {
           label="Price"
           maxValue={1000}
           minValue={0}
-          step={1}
+          step={0.01}
           value={initialPrice}
           onChange={setInitialPrice}
+          format="currency"
         />
         <NumberInput
           label="2023 Shares"
@@ -116,27 +98,29 @@ function App() {
         />
         <NumberInput
           label="Annual Shares"
-          maxValue={150}
-          minValue={20}
+          maxValue={1000}
+          minValue={0}
           step={1}
           value={annualShares}
           onChange={setAnnualShares}
         />
         <NumberInput
           label="Annual Growth Rate"
-          maxValue={30}
-          minValue={-5}
-          step={1}
+          maxValue={0.25}
+          minValue={-0.25}
+          step={0.01}
           value={annualGrowthRate}
           onChange={setAnnualGrowthRate}
+          format="percent"
         />
         <NumberInput
           label="Annual Volility"
-          maxValue={50}
+          maxValue={0.5}
           minValue={0}
-          step={1}
+          step={0.01}
           value={annualVolatility}
           onChange={setAnnualVolatility}
+          format="percent"
         />
       </div>
 
@@ -146,9 +130,9 @@ function App() {
             rawData={[
               [
                 0,
-                debouncedInitialPrice * debouncedInitialShares,
-                debouncedInitialShares * debouncedInitialPrice,
-                debouncedInitialShares * debouncedInitialPrice,
+                initialPrice * initialShares,
+                initialShares * initialPrice,
+                initialShares * initialPrice,
               ],
               ...simulation,
             ]}
@@ -172,20 +156,18 @@ function App() {
           <TableBody>
             <TableRow>
               <TableCell className="font-bold">{currentPlanYear}</TableCell>
-              <TableCell className="font-bold">
-                {debouncedInitialShares}
-              </TableCell>
+              <TableCell className="font-bold">{initialShares}</TableCell>
               <TableCell className="text-right font-bold font-mono">
-                {formatMoney(debouncedInitialPrice)}
+                {formatMoney(initialPrice)}
               </TableCell>
               <TableCell className="text-right font-mono">
-                {formatMoney(debouncedInitialShares * debouncedInitialPrice)}
+                {formatMoney(initialShares * initialPrice)}
               </TableCell>
               <TableCell className="text-right font-mono">
-                {formatMoney(debouncedInitialShares * debouncedInitialPrice)}
+                {formatMoney(initialShares * initialPrice)}
               </TableCell>
               <TableCell className="text-right font-mono">
-                {formatMoney(debouncedInitialShares * debouncedInitialPrice)}
+                {formatMoney(initialShares * initialPrice)}
               </TableCell>
             </TableRow>
             {simulation.map(
@@ -195,12 +177,11 @@ function App() {
                     {year + currentPlanYear}
                   </TableCell>
                   <TableCell className="font-bold">
-                    {debouncedInitialShares + debouncedAnnualShares * year}
+                    {initialShares + annualShares * year}
                   </TableCell>
                   <TableCell className="text-right font-bold font-mono">
                     {formatMoney(
-                      percentile50 /
-                        (debouncedInitialShares + debouncedAnnualShares * year),
+                      percentile50 / (initialShares + annualShares * year),
                     )}
                   </TableCell>
 
@@ -231,6 +212,7 @@ type SliderProps = {
   label: string;
   value: number;
   onChange: (value: number) => void;
+  format?: "percent" | "decimal" | "currency";
 };
 function NumberInput({
   maxValue,
@@ -239,6 +221,7 @@ function NumberInput({
   step,
   label,
   onChange,
+  format = "decimal",
 }: SliderProps) {
   return (
     <NumberField
@@ -248,6 +231,11 @@ function NumberInput({
       value={value}
       onChange={onChange}
       className="grid w-full max-w-sm items-center gap-1.5"
+      formatOptions={
+        format === "currency"
+          ? { style: "currency", currency: "USD" }
+          : { style: format }
+      }
     >
       <Label>{label}</Label>
       <Group className="group">
@@ -325,6 +313,10 @@ export function formatMoney(number: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function parseNumber(value: string | null) {
+  return value ? Number(value) : undefined;
 }
 
 export default App;
