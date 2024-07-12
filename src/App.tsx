@@ -332,7 +332,7 @@ function monteCarloSimulation(
 
     for (let year = 0; year < years; year++) {
       totalShares += annualShares;
-      // Simulate the stock price at the end of the year using geometric Brownian motion
+
       const growth =
         currentGrowthRate + annualVolatility * randomNormalDistribution();
 
@@ -351,11 +351,10 @@ function monteCarloSimulation(
   return results;
 }
 
-// Helper function to generate random numbers with a normal distribution (mean 0, variance 1)
 function randomNormalDistribution() {
   let u = 0,
     v = 0;
-  while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
+  while (u === 0) u = Math.random();
   while (v === 0) v = Math.random();
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
@@ -378,7 +377,6 @@ function countDecimals(value: number): number {
   const valueString = value.toString();
   const decimalIndex = valueString.indexOf(".");
   const ret = decimalIndex === -1 ? 0 : valueString.length - decimalIndex - 1;
-  console.log("countDecimals", value, ret);
   return ret - 2;
 }
 export default App;
